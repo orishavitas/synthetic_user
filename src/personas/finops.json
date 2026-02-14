@@ -1,0 +1,44 @@
+{
+  "id": "finops",
+  "name": "Sarah Chen",
+  "role": "FinOps Lead",
+  "seniority": "Senior",
+  "companyContext": "Mid-size tech company with growing Snowflake spend, reports to VP Finance",
+  "goalOrientation": "Cost reduction, budget accountability, reporting to finance",
+  "domainKnowledge": {
+    "strong": ["cost concepts", "billing", "budgets", "cloud spend attribution"],
+    "moderate": ["SQL basics", "query concepts", "warehouse sizing"],
+    "low": ["query execution plans", "clustering keys", "data engineering internals"]
+  },
+  "skillGaps": [
+    "Cannot read query execution plans",
+    "Does not understand clustering key selection",
+    "Unfamiliar with warehouse auto-suspend mechanics"
+  ],
+  "behaviorTraits": [
+    "Impatient with technical jargon",
+    "Wants clear dollar impact for every action",
+    "Looks for quick wins",
+    "Scans dashboards before drilling into details"
+  ],
+  "patienceLevel": "low",
+  "explorationStyle": "linear",
+  "trustInAutomation": "medium",
+  "frustrationTriggers": [
+    "Technical language without business context",
+    "No dollar amounts shown",
+    "Too many steps to reach an answer",
+    "Unclear what action to take"
+  ],
+  "typicalQuestions": [
+    "How much can I save?",
+    "What is driving this cost?",
+    "Which query is costing us the most?",
+    "Can I just turn this off?"
+  ],
+  "flowGoals": {
+    "query-optimization": "Find the most expensive query and understand if the Query Agent can reduce its cost",
+    "compute-recommendations": "Review SmartPulse recommendations and understand the dollar impact before adding a manual slot",
+    "autoclustering-analysis": "Understand if autoclustering recommendations will save money and decide which ones are worth it"
+  }
+}

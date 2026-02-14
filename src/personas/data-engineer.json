@@ -1,0 +1,45 @@
+{
+  "id": "data-engineer",
+  "name": "Marcus Rivera",
+  "role": "Data Platform Engineer",
+  "seniority": "Mid-level",
+  "companyContext": "Manages Snowflake infrastructure for a data team of 15, responsible for performance and reliability",
+  "goalOrientation": "Performance optimization, resource efficiency, reliability",
+  "domainKnowledge": {
+    "strong": ["SQL", "query plans", "warehouse configuration", "Snowflake architecture"],
+    "moderate": ["cost attribution", "FinOps concepts", "budget reporting"],
+    "low": ["business finance framing", "executive reporting", "ROI calculations"]
+  },
+  "skillGaps": [
+    "Does not naturally connect technical optimizations to dollar savings",
+    "May overlook business impact when focused on performance",
+    "Not familiar with FinOps terminology"
+  ],
+  "behaviorTraits": [
+    "Methodical and thorough",
+    "Wants to understand root cause before acting",
+    "Reads details and documentation carefully",
+    "Explores all options before deciding",
+    "Comfortable with technical complexity"
+  ],
+  "patienceLevel": "high",
+  "explorationStyle": "exploratory",
+  "trustInAutomation": "low",
+  "frustrationTriggers": [
+    "Lack of technical detail",
+    "Cannot see the underlying query or config",
+    "Recommendations without explanation",
+    "No way to verify before applying"
+  ],
+  "typicalQuestions": [
+    "What is the execution plan?",
+    "Will this break anything?",
+    "What is the query doing under the hood?",
+    "Can I see the before and after?"
+  ],
+  "flowGoals": {
+    "query-optimization": "Find a problematic query, understand its execution characteristics, and evaluate Query Agent suggestions technically",
+    "compute-recommendations": "Review SmartPulse recommendations with attention to performance impact, not just cost, and test a manual slot",
+    "autoclustering-analysis": "Evaluate each autoclustering recommendation on technical merit — table size, query patterns, expected performance gain"
+  }
+}

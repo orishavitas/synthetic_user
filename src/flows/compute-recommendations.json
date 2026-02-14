@@ -1,0 +1,11 @@
+{
+  "name": "compute-recommendations",
+  "startUrl": "/compute",
+  "goal": "Find a warehouse that has SmartPulse recommendations, review the recommendations, and add a one-time manual slot.",
+  "success": "Agent has added a manual slot and reviewed recommendations.",
+  "guardrailOverrides": {
+    "allowedButtonTexts": ["Add Manual Slot", "Add Slot"],
+    "blockedButtonTexts": ["Apply Configuration", "Apply Changes", "Save Configuration"]
+  },
+  "maxSteps": 30
+}

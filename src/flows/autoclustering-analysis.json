@@ -1,0 +1,10 @@
+{
+  "name": "autoclustering-analysis",
+  "startUrl": "/autoclustering",
+  "goal": "Generate an autoclustering analysis, go through the recommendations, and decide whether each recommendation is worth using or not.",
+  "success": "Agent has reviewed all recommendations and made a decision on each.",
+  "guardrailOverrides": {
+    "blockedButtonTexts": ["Apply Clustering", "Apply Changes", "Apply All"]
+  },
+  "maxSteps": 30
+}

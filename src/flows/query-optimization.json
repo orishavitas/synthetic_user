@@ -1,0 +1,10 @@
+{
+  "name": "query-optimization",
+  "startUrl": "/queries",
+  "goal": "Find the most expensive, long-running query and check if the Seemore Query Agent can suggest optimizations for it.",
+  "success": "Agent has reviewed optimization suggestions from the Query Agent.",
+  "guardrailOverrides": {
+    "blockedButtonTexts": ["Apply", "Execute", "Run Optimization"]
+  },
+  "maxSteps": 30
+}

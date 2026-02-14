@@ -1,0 +1,6 @@
+{
+  "vision": { "provider": "openai", "model": "gpt-4o" },
+  "reasoning": { "provider": "anthropic", "model": "claude-sonnet-4-5-20250929" },
+  "analysis": { "provider": "anthropic", "model": "claude-sonnet-4-5-20250929" },
+  "bulk": { "provider": "google", "model": "gemini-2.0-flash" }
+}

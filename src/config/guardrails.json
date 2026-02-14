@@ -1,0 +1,9 @@
+{
+  "blockedButtonTexts": [
+    "Apply", "Save", "Confirm", "Enable", "Disable", "Delete", "Submit",
+    "Apply Changes", "Save Changes", "Confirm Changes"
+  ],
+  "blockedSelectors": [],
+  "blockedUrlPatterns": ["/apply", "/save", "/confirm", "/delete"],
+  "allowedDomains": ["app.seemoredata.com", "seemoredata.com"]
+}
