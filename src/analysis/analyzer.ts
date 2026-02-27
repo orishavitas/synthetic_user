@@ -1,7 +1,8 @@
 import { routeAnalysis } from "../llm/router.js";
+import { UxIssueSchema, ScorecardSchema } from "../types/index.js";
+import type { UxIssue, Scorecard } from "../types/index.js";
 import type { Decision } from "../types/index.js";
 import type { Persona, Flow } from "../types/index.js";
-import type { UxIssue, Scorecard } from "../types/index.js";
 import type { GuardrailEvent } from "../recording/logger.js";
 
 interface AnalysisResult {
@@ -61,7 +62,8 @@ ${decisions
 ${guardrailEvents.length === 0 ? "None" : guardrailEvents.map((g) => `Step ${g.step}: ${g.reason}`).join("\n")}
 
 ## Instructions
-Analyze this session and respond with this exact JSON:
+Analyze this session and wrap your response in <json> tags:
+<json>
 {
   "issues": [
     {
@@ -83,24 +85,20 @@ Analyze this session and respond with this exact JSON:
     "confusionMoments": <number>,
     "flowEfficiency": "X steps taken vs Y estimated optimal"
   }
-}`;
+}
+</json>
+
+Output ONLY the <json>...</json> block. No other text.`;
 
   const response = await routeAnalysis(systemPrompt, userMessage);
 
   try {
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON in analysis response");
-    const parsed = JSON.parse(jsonMatch[0]);
+    const jsonMatch = response.match(/<json>([\s\S]*?)<\/json>/);
+    if (!jsonMatch) throw new Error("No <json> block in analysis response");
+    const parsed = JSON.parse(jsonMatch[1].trim());
     return {
-      issues: parsed.issues ?? [],
-      scorecard: parsed.scorecard ?? {
-        taskCompleted: "partial",
-        stepsToCompletion: decisions.length,
-        frictionPoints: 0,
-        guardrailHits: guardrailEvents.length,
-        confusionMoments: 0,
-        flowEfficiency: "unknown",
-      },
+      issues: UxIssueSchema.array().parse(parsed.issues ?? []),
+      scorecard: ScorecardSchema.parse(parsed.scorecard),
     };
   } catch (e) {
     console.error("Failed to parse analysis response:", e);
