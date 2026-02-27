@@ -49,13 +49,15 @@ Your personal goal: ${persona.flowGoals[flow.name] ?? flow.goal}
 Given what you see on screen and your action history, decide what to do next.
 Think AS this persona — with their knowledge gaps, patience level, and behavior style.
 
-Respond in this exact JSON format:
+Wrap your response in <json> tags like this:
+<json>
 {
   "observation": "What you see on the current screen",
   "reasoning": "What you think you should do and why (as this persona)",
   "emotion": "How you feel right now (neutral, curious, confused, frustrated, satisfied, etc.) and why",
   "action": { "type": "click|type|scroll|navigate|wait|done|blocked", ...params }
 }
+</json>
 
 Action types:
 - click: { "type": "click", "selector": "CSS selector" }
@@ -65,6 +67,8 @@ Action types:
 - wait: { "type": "wait", "seconds": 2 }
 - done: { "type": "done", "reason": "why the task is complete" }
 - blocked: { "type": "blocked", "reason": "why you can't proceed" }
+
+IMPORTANT: Output ONLY the <json>...</json> block. No other text outside the tags.
 
 IMPORTANT: For CSS selectors, use visible text-based selectors when possible:
 - button:has-text("Button Text")

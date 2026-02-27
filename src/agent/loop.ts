@@ -31,6 +31,7 @@ export async function runAgentLoop(
   await session.page.goto(startUrl, { waitUntil: "networkidle" });
 
   let guardrailFeedback: string | undefined;
+  let consecutiveBlocks = 0;
 
   for (let step = 1; step <= flow.maxSteps; step++) {
     console.log(`\n--- Step ${step}/${flow.maxSteps} ---`);
@@ -55,12 +56,12 @@ export async function runAgentLoop(
     );
     guardrailFeedback = undefined; // Reset after use
 
-    // Parse the LLM response
+    // Parse the LLM response — extract from <json> delimiters
     let parsed: { observation: string; reasoning: string; emotion: string; action: Action };
     try {
-      const jsonMatch = reasoningResponse.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("No JSON found in response");
-      const raw = JSON.parse(jsonMatch[0]);
+      const jsonMatch = reasoningResponse.match(/<json>([\s\S]*?)<\/json>/);
+      if (!jsonMatch) throw new Error("No <json> block found in response");
+      const raw = JSON.parse(jsonMatch[1].trim());
       parsed = {
         observation: raw.observation ?? "",
         reasoning: raw.reasoning ?? "",
@@ -120,6 +121,12 @@ export async function runAgentLoop(
         expectedEndOfFlow: parsed.action.type === "done",
       });
       guardrailFeedback = `Your previous action was blocked by a safety guardrail: ${guardrailCheck.reason}. You cannot perform this action. Continue with an alternative approach or declare done/blocked.`;
+      consecutiveBlocks++;
+      if (consecutiveBlocks >= 3) {
+        console.log("\n=== Guardrail critical: 3 consecutive blocks, stopping ===");
+        logger.save();
+        return { exitReason: "guardrail_critical", totalSteps: step, finalMessage: guardrailCheck.reason };
+      }
       continue;
     }
 
@@ -137,6 +144,7 @@ export async function runAgentLoop(
     try {
       await executeAction(session.page, parsed.action);
       await waitForPageSettle(session.page);
+      consecutiveBlocks = 0;
     } catch (e) {
       console.error(`  Action failed: ${e}`);
       guardrailFeedback = `Your previous action failed with error: ${e}. Try a different approach.`;
