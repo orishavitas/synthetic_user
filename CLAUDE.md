@@ -58,3 +58,47 @@ This is a synthetic user framework for automated usability testing of SeemoreDat
 - The synthetic user must NEVER apply changes in production (guardrails enforce this)
 - Always suggest `--max-steps 5` for first/test runs
 - Module format is CommonJS — use __dirname not import.meta.dirname
+
+## Module System Rules
+- **CommonJS only.** `package.json` has `"type": "commonjs"`.
+- Use `__dirname` for path resolution. Never `import.meta.dirname`.
+- `tsconfig.json` must stay `"module": "CommonJS"`, `"moduleResolution": "Node"`.
+- Runtime: `npx tsx src/main.ts ...` (not `node dist/...`)
+
+## JSON Extraction Pattern
+Both the agent loop and analyzer use `<json>` delimiters, not regex:
+```typescript
+const match = response.match(/<json>([\s\S]*?)<\/json>/);
+const data = JSON.parse(match[1].trim());
+```
+The prompts (`buildReasoningPrompt`, `analyzeRun`) instruct the model to wrap output in `<json>` tags.
+Never revert to greedy regex (`/\{[\s\S]*\}/`).
+
+## How to Add a Persona
+1. Create `src/personas/<id>.json` — follow structure of `finops.json`
+2. Add `flowGoals` for each existing flow
+3. No code changes needed
+
+## How to Add a Flow
+1. Create `src/flows/<name>.json` — follow structure of `autoclustering-analysis.json`
+2. Set `startUrl`, `goal`, `success`, `maxSteps`, optional `guardrailOverrides`
+3. Add `flowGoals.<name>` to each persona JSON
+4. No code changes needed
+
+## How to Debug a Failed Run
+1. Check console output for the error message
+2. Open `runs/<run-id>/decision-log.json` — each step shows observation, reasoning, emotion, action
+3. Check `runs/<run-id>/guardrail-events.json` if guardrail blocks are suspected
+4. Screenshots are in `runs/<run-id>/screenshots/` — correlate with step numbers in the log
+5. Video is `runs/<run-id>/*.webm` — open in Chrome or VLC
+
+## Known Fragile Points (check memory/MEMORY.md for full list)
+- Login selectors in `src/browser/login.ts` may need updating if the SeemoreData auth page changes
+- `<json>` delimiter relies on the LLM following instructions — watch for parse failures in decision-log
+- Guardrail text matching blocks any button containing blocked words (e.g., "Apply" blocks "Apply Filter")
+
+## Smoke Test Command
+```bash
+npx tsx src/main.ts --persona finops --flow query-optimization --max-steps 5
+```
+This should complete without errors and produce a report in `runs/`.
