@@ -12,12 +12,12 @@ export async function loginToSeemoreData(page: Page): Promise<void> {
   console.log("Logging in to SeemoreData...");
   await page.goto(baseUrl, { waitUntil: "networkidle" });
 
-  // Fill login form — selectors may need adjustment for the actual login page
-  await page.fill('input[type="email"], input[name="email"], #email', email);
-  await page.fill('input[type="password"], input[name="password"], #password', password);
-  await page.click('button[type="submit"], button:has-text("Sign in"), button:has-text("Log in")');
+  // Use locator().first() to avoid strict mode violations when multiple selectors match
+  await page.locator('input[type="email"], input[name="email"], #email').first().fill(email);
+  await page.locator('input[type="password"], input[name="password"], #password').first().fill(password);
+  await page.locator('button[type="submit"], button:has-text("Sign in"), button:has-text("Log in")').first().click();
 
-  // Wait for login to complete
+  // Wait for redirect away from login page
   await page.waitForURL((url) => !url.pathname.includes("login"), { timeout: 30000 });
   console.log("Login successful.");
 }
