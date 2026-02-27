@@ -34,3 +34,19 @@ export async function callOpenAIVision(
   });
   return response.choices[0].message.content ?? "";
 }
+
+export async function callOpenAIText(
+  systemPrompt: string,
+  textMessage: string,
+  model: string
+): Promise<string> {
+  const response = await getClient().chat.completions.create({
+    model,
+    max_tokens: 4096,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: textMessage },
+    ],
+  });
+  return response.choices[0].message.content ?? "";
+}

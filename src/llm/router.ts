@@ -1,6 +1,6 @@
 import { loadModelsConfig, type ModelConfig } from "../config/loader.js";
 import { callAnthropic } from "./providers/anthropic.js";
-import { callOpenAIVision } from "./providers/openai.js";
+import { callOpenAIVision, callOpenAIText } from "./providers/openai.js";
 import { callGemini } from "./providers/google.js";
 
 export type TaskType = "vision" | "reasoning" | "analysis" | "bulk";
@@ -32,7 +32,7 @@ export async function routeReasoning(
     case "anthropic":
       return callAnthropic(systemPrompt, userMessage, config.model);
     case "openai":
-      return callOpenAIVision(systemPrompt, userMessage, "", config.model);
+      return callOpenAIText(systemPrompt, userMessage, config.model);
     case "google":
       return callGemini(systemPrompt, userMessage, config.model);
     default:
@@ -49,7 +49,7 @@ export async function routeAnalysis(
     case "anthropic":
       return callAnthropic(systemPrompt, userMessage, config.model);
     case "openai":
-      return callOpenAIVision(systemPrompt, userMessage, "", config.model);
+      return callOpenAIText(systemPrompt, userMessage, config.model);
     case "google":
       return callGemini(systemPrompt, userMessage, config.model);
     default:
