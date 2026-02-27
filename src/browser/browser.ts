@@ -14,7 +14,8 @@ export async function launchBrowser(runDir: string): Promise<BrowserSession> {
   const screenshotsDir = resolve(runDir, "screenshots");
   mkdirSync(screenshotsDir, { recursive: true });
 
-  const browser = await chromium.launch({ headless: false });
+  const headless = process.env.HEADLESS === "true";
+  const browser = await chromium.launch({ headless });
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 },
     recordVideo: { dir: runDir, size: { width: 1920, height: 1080 } },
