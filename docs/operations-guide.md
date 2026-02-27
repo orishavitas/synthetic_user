@@ -56,7 +56,7 @@ The `.env` file is where you store all your keys and credentials so the system c
 ```
 OPENAI_API_KEY=sk-abc123your-key-here
 ANTHROPIC_API_KEY=sk-ant-abc123your-key-here
-GOOGLE_API_KEY=your-google-key-here
+GOOGLE_AI_API_KEY=your-google-key-here
 SEEMOREDATA_URL=https://your-seemoredata-instance.com
 SEEMOREDATA_EMAIL=testuser@yourcompany.com
 SEEMOREDATA_PASSWORD=your-test-password
