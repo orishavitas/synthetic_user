@@ -18,7 +18,7 @@ export function generateReport(
     timestamp: new Date().toISOString(),
     issues,
     scorecard,
-    videoPath: videoFile ?? "video.webm",
+    videoPath: videoFile,
     screenshotsDir: "screenshots/",
   };
 
@@ -67,7 +67,12 @@ function buildMarkdownReport(report: Report): string {
   }
 
   md += `## Artifacts\n\n`;
-  md += `- Video: [${report.videoPath}](${report.videoPath})\n`;
+  if (report.videoPath) {
+    md += `- Video: [${report.videoPath}](${report.videoPath})\n`;
+  } else {
+    md += `- Video: not recorded
+`;
+  }
   md += `- Screenshots: [${report.screenshotsDir}](${report.screenshotsDir})\n`;
 
   return md;

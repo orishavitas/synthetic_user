@@ -27,7 +27,7 @@ export const ReportSchema = z.object({
   timestamp: z.string(),
   issues: z.array(UxIssueSchema),
   scorecard: ScorecardSchema,
-  videoPath: z.string(),
+  videoPath: z.string().nullable(),
   screenshotsDir: z.string(),
 });
 
