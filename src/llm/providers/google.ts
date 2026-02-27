@@ -4,7 +4,13 @@ let client: GoogleGenerativeAI | null = null;
 
 function getClient(): GoogleGenerativeAI {
   if (!client) {
-    client = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY ?? "");
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        "GOOGLE_AI_API_KEY is not set. Add it to your .env file or remove Google from models.json."
+      );
+    }
+    client = new GoogleGenerativeAI(apiKey);
   }
   return client;
 }
