@@ -5,6 +5,9 @@ steps, heart rate, sleep, weight, active calories, distance, exercise
 sessions — through an MCP connector that's reachable 24/7 from anywhere,
 with no laptop or tunnel required.
 
+**Status**: built but not yet deployed or run on a real device — see
+[`TODO.md`](./TODO.md) for the exact handoff punch list.
+
 ## Architecture
 
 Health Connect data lives **only on the Android device** — Google doesn't
