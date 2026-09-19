@@ -2,3 +2,11 @@ node_modules/
 dist/
 runs/
 .env
+
+# Android companion app build output
+mcp-google-health/android-companion/.gradle/
+mcp-google-health/android-companion/build/
+mcp-google-health/android-companion/app/build/
+mcp-google-health/android-companion/local.properties
+mcp-google-health/android-companion/.idea/
+mcp-google-health/android-companion/*.iml

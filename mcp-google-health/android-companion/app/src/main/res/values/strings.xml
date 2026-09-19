@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Health Bridge</string>
+    <string name="bridge_notification_channel">Health Bridge server</string>
+</resources>
