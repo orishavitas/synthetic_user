@@ -85,18 +85,49 @@ phone by USB instead and run `adb reverse tcp:8787 tcp:8787`, then set
 
 ## 3. Expose it to Claude mobile
 
-Claude mobile needs a public HTTPS URL. For dev/testing, tunnel your local
-server:
+Claude mobile needs a public HTTPS URL. This still runs on the same
+laptop/machine as the MCP server — a tunnel just dials out from there, it
+doesn't need a separate host. Two options:
+
+### Option A — Cloudflare named tunnel (recommended: permanent URL)
+
+Free, and unlike ngrok's free tier the URL doesn't change every restart.
+Requires you own a domain added to a (free) Cloudflare account.
 
 ```bash
-ngrok http 3200
+brew install cloudflared   # or see cloudflared's install docs for your OS
+
+cloudflared tunnel login
+cloudflared tunnel create health-mcp
+cloudflared tunnel route dns health-mcp mcp.yourdomain.com
+
+cp mcp-google-health/server/cloudflared/config.yml.example \
+   mcp-google-health/server/cloudflared/config.yml
+# edit config.yml: set credentials-file to the path cloudflared printed above
+
+cloudflared tunnel run health-mcp
 ```
 
-Take the `https://...ngrok-free.app` URL it prints, set it (its bare host,
-no scheme) as `MCP_ALLOWED_HOSTS` in `.env`, and restart `npm run dev`.
+Set `MCP_ALLOWED_HOSTS=mcp.yourdomain.com` in `.env` and restart `npm run dev`.
+Your connector URL is now permanently `https://mcp.yourdomain.com/mcp`.
 
-Then in the Claude mobile app: **Settings → Connectors → Add connector**,
-and enter:
+### Option B — Quick tunnel (no domain needed, ephemeral URL)
+
+Same tradeoff as ngrok — zero setup, but the URL changes every time you
+restart it, so you'll need to re-add the connector in Claude mobile each time.
+
+```bash
+cloudflared tunnel --url http://localhost:3200
+# or: ngrok http 3200
+```
+
+Take the `https://...trycloudflare.com` (or `...ngrok-free.app`) URL it
+prints, set its bare hostname as `MCP_ALLOWED_HOSTS` in `.env`, and restart
+`npm run dev`.
+
+### Add the connector
+
+In the Claude mobile app: **Settings → Connectors → Add connector**, and enter:
 
 - URL: `https://<your-tunnel-domain>/mcp`
 - If Claude's connector setup asks for an API key/auth header, use
@@ -127,9 +158,10 @@ trailing 24 hours when omitted.
 - The local bridge (`android-companion`) uses plain HTTP by design — it's
   meant for your own LAN/USB only. Don't port-forward it to the internet.
 - The MCP server should always sit behind `MCP_API_KEY` once tunneled.
-- Tunnels like ngrok are temporary and the URL changes each time you
-  restart it (on the free tier) — you'll need to re-add the connector in
-  Claude mobile when that happens.
+- Quick tunnels (ngrok free tier, `cloudflared tunnel --url`) are ephemeral —
+  the URL changes each restart, so you'll need to re-add the connector in
+  Claude mobile when that happens. A named Cloudflare tunnel (Option A
+  above) avoids this if you have a domain to spare.
 - Going beyond dev/local (a permanent hosted MCP server, real Google OAuth,
   etc.) is a materially bigger project — a real backend, HTTPS certs, and
   either the deprecated Google Fit API or a proper mobile-to-cloud sync
