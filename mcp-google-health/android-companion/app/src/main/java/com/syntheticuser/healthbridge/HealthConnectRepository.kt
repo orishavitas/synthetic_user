@@ -161,7 +161,28 @@ class HealthConnectRepository(private val context: Context) {
             .aggregate(AggregateRequest(setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL), range))[
             ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL,
         ]?.inKilocalories ?: 0.0
-        return JSONObject().put("totalKcal", total)
+
+        val buckets = client().aggregateGroupByDuration(
+            AggregateGroupByDurationRequest(
+                metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
+                timeRangeFilter = range,
+                timeRangeSlicer = Duration.ofHours(1),
+            ),
+        )
+        val bucketsJson = JSONArray()
+        for (bucket in buckets) {
+            bucketsJson.put(
+                JSONObject()
+                    .put("start", bucket.startTime.toString())
+                    .put("end", bucket.endTime.toString())
+                    .put(
+                        "kcal",
+                        bucket.result[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories ?: 0.0,
+                    ),
+            )
+        }
+
+        return JSONObject().put("totalKcal", total).put("buckets", bucketsJson)
     }
 
     suspend fun distance(start: Instant, end: Instant): JSONObject {
@@ -169,7 +190,25 @@ class HealthConnectRepository(private val context: Context) {
         val total = client()
             .aggregate(AggregateRequest(setOf(DistanceRecord.DISTANCE_TOTAL), range))[DistanceRecord.DISTANCE_TOTAL]
             ?.inMeters ?: 0.0
-        return JSONObject().put("totalMeters", total)
+
+        val buckets = client().aggregateGroupByDuration(
+            AggregateGroupByDurationRequest(
+                metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
+                timeRangeFilter = range,
+                timeRangeSlicer = Duration.ofHours(1),
+            ),
+        )
+        val bucketsJson = JSONArray()
+        for (bucket in buckets) {
+            bucketsJson.put(
+                JSONObject()
+                    .put("start", bucket.startTime.toString())
+                    .put("end", bucket.endTime.toString())
+                    .put("meters", bucket.result[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0),
+            )
+        }
+
+        return JSONObject().put("totalMeters", total).put("buckets", bucketsJson)
     }
 
     suspend fun exerciseSessions(start: Instant, end: Instant): JSONObject {

@@ -1,146 +1,107 @@
-# Google Health Connect MCP bridge (dev/local)
+# Google Health Connect MCP bridge (cloud-hosted)
 
 Lets Claude (mobile or desktop) read your phone's Google Health Connect data —
 steps, heart rate, sleep, weight, active calories, distance, exercise
-sessions — through an MCP connector.
+sessions — through an MCP connector that's reachable 24/7 from anywhere,
+with no laptop or tunnel required.
 
-## Why two components
+## Architecture
 
-Health Connect data lives **only on the Android device** — Google does not
-offer a cloud API for it (unlike the older, now-deprecated Google Fit REST
-API). Claude's mobile app only speaks to **remote** MCP servers (a public
-HTTPS URL), it cannot run a process on your phone or launch a local one on
-your computer.
-
-So this is a two-part bridge:
+Health Connect data lives **only on the Android device** — Google doesn't
+offer a live cloud API for it. So instead of Claude reaching into your
+phone in real time, the phone periodically **pushes** a snapshot to a
+cloud backend, and Claude reads from that backend:
 
 ```
-┌─────────────────────┐   local HTTP    ┌──────────────────────┐   MCP (Streamable HTTP)   ┌────────────┐
-│ Android companion app│ ───────────────▶│ Node MCP server       │◀─────────────────────────│ Claude     │
-│ (Health Connect SDK) │  LAN / adb      │ (this machine)        │  tunneled via ngrok/      │ (mobile or │
-│  android-companion/  │  reverse        │  server/              │  cloudflared for dev      │  desktop)  │
-└─────────────────────┘                 └──────────────────────┘                            └────────────┘
+┌───────────────────────┐  HTTPS POST /api/sync   ┌──────────────────────────┐   MCP (Streamable HTTP)   ┌────────────┐
+│ Android companion app  │ ───────────────────────▶│ Vercel: api/sync, api/mcp│◀─────────────────────────│ Claude     │
+│ (Health Connect SDK +  │  every ~15 min, any     │  + Neon Postgres         │  https://your-app         │ (mobile or │
+│  WorkManager)           │  network (WiFi/cell)    │  android-companion/      │  .vercel.app/mcp          │  desktop)  │
+└───────────────────────┘                          └──────────────────────────┘                            └────────────┘
 ```
 
-1. **`android-companion/`** — a small Android app that requests Health
-   Connect read permissions and serves the data over a local HTTP API
-   (`http://<phone-ip>:8787`).
-2. **`server/`** — a Node/TypeScript MCP server that calls that local API
-   and exposes it as MCP tools (`get_steps`, `get_heart_rate_samples`, etc.).
-   You run this on your laptop and tunnel it so Claude mobile can reach it.
+- **`android-companion/`** — an Android app that requests Health Connect
+  read permissions and runs a WorkManager job every ~15 minutes (the OS
+  minimum for periodic background work) that uploads a rolling 48-hour
+  window of data to your Vercel deployment. No local server, no LAN
+  pairing, no port exposure — it works over any internet connection.
+- **`server/`** — a Vercel serverless project (`api/sync.ts`, `api/mcp.ts`)
+  backed by Neon Postgres. `/api/sync` receives the phone's uploads;
+  `/api/mcp` is the MCP endpoint Claude connects to, which reads back
+  whatever was last synced.
 
-This setup is **dev/local only**, per how it was scoped: no production
-hosting, no Google Cloud OAuth app. Everything runs on your own machine and
-phone, on your own network.
+**Tradeoff of this design**: data can lag by up to ~15–20 minutes (Android
+won't run background jobs more often than that) rather than being truly
+live. Given the metrics involved (steps, sleep, heart rate, etc.), that's
+a reasonable trade for "always reachable, no infrastructure to babysit."
 
-## 1. Run the Android companion app
+## 1. Deploy the server to Vercel
+
+You mentioned you already have domains on Vercel, so:
+
+1. **Add Neon Postgres**: in your Vercel project, go to **Storage → Create
+   Database → Neon** (or connect an existing Neon project). This
+   automatically sets the `DATABASE_URL` environment variable.
+2. **Run the schema once** against that database:
+   ```bash
+   psql "$DATABASE_URL" -f mcp-google-health/server/db/schema.sql
+   ```
+   (Get the connection string from the Neon dashboard, or `vercel env pull`
+   after step 1.)
+3. **Set two more environment variables** in Vercel (Project Settings →
+   Environment Variables):
+   - `MCP_API_KEY` — a long random string; protects `/api/mcp` (Claude's
+     connector needs this).
+   - `SYNC_API_KEY` — a different long random string; protects `/api/sync`
+     (the phone needs this).
+4. **Deploy**:
+   ```bash
+   cd mcp-google-health/server
+   npm install
+   npx vercel deploy --prod
+   ```
+   (or connect the repo in the Vercel dashboard for git-based deploys).
+   You'll get a permanent URL like `https://your-project.vercel.app`, or
+   attach one of your existing domains to it.
+
+## 2. Install the Android companion app
 
 Requires Android Studio (this project can't be built/tested in this
-sandbox — there's no Android SDK here, so treat the Kotlin as written-but-
-unverified until you build it).
+sandbox — there's no Android SDK here, so treat the Kotlin as
+written-but-unverified until you build it).
 
-1. Open `android-companion/` as a project in Android Studio. Let it sync
-   and generate the Gradle wrapper if prompted.
+1. Open `android-companion/` in Android Studio, let it sync.
 2. Install the **Health Connect** app from Google Play if your phone is on
    Android 9–13. Android 14+ has it built in.
-3. Run the app on a physical device (Health Connect doesn't work well on
-   emulators). Grant the health permissions when prompted.
-4. Tap **Start bridge server**. The screen shows:
-   - the phone's local IP address(es) and port (`8787`)
-   - a generated API key
+3. Run the app on a physical device (Health Connect doesn't behave well on
+   emulators). Tap **Grant Health Connect access** and approve the
+   permissions.
+4. Enter your Vercel deployment URL (e.g. `https://your-project.vercel.app`)
+   and the `SYNC_API_KEY` you set in step 1.3, then tap **Save & enable
+   periodic sync**. Use **Sync now** to trigger an immediate upload and
+   confirm it works before waiting on the 15-minute schedule.
 
-Keep the app open (or at least backgrounded, not force-stopped) — it runs
-the bridge in a foreground service so Android won't kill it.
+The app doesn't need to stay open — WorkManager runs the sync job in the
+background on its own schedule, including across reboots.
 
-## 2. Run the MCP server
+## 3. Add the connector in Claude mobile
 
-```bash
-cd mcp-google-health/server
-npm install
-cp .env.example .env   # then fill in the values shown on the phone
-npm run dev
-```
+**Settings → Connectors → Add connector**:
 
-`.env`:
-
-```
-HEALTH_BRIDGE_URL=http://192.168.1.23:8787   # from the app screen; or http://127.0.0.1:8787 with adb reverse
-HEALTH_BRIDGE_API_KEY=<the key shown in the app>
-MCP_API_KEY=<make up your own long random string>
-MCP_ALLOWED_HOSTS=your-tunnel-subdomain.ngrok-free.app
-PORT=3200
-```
-
-- `HEALTH_BRIDGE_URL`/`HEALTH_BRIDGE_API_KEY` — how this server reaches the
-  phone.
-- `MCP_API_KEY` — protects *this* server. Once tunneled, its URL is public;
-  without this, anyone with the link could read your health data.
-- `MCP_ALLOWED_HOSTS` — required once you tunnel (see below): the SDK's
-  DNS-rebinding protection otherwise rejects requests whose `Host` header
-  isn't `localhost`.
-
-If your laptop and phone aren't on the same Wi-Fi network, connect the
-phone by USB instead and run `adb reverse tcp:8787 tcp:8787`, then set
-`HEALTH_BRIDGE_URL=http://127.0.0.1:8787`.
-
-## 3. Expose it to Claude mobile
-
-Claude mobile needs a public HTTPS URL. This still runs on the same
-laptop/machine as the MCP server — a tunnel just dials out from there, it
-doesn't need a separate host. Two options:
-
-### Option A — Cloudflare named tunnel (recommended: permanent URL)
-
-Free, and unlike ngrok's free tier the URL doesn't change every restart.
-Requires you own a domain added to a (free) Cloudflare account.
-
-```bash
-brew install cloudflared   # or see cloudflared's install docs for your OS
-
-cloudflared tunnel login
-cloudflared tunnel create health-mcp
-cloudflared tunnel route dns health-mcp mcp.yourdomain.com
-
-cp mcp-google-health/server/cloudflared/config.yml.example \
-   mcp-google-health/server/cloudflared/config.yml
-# edit config.yml: set credentials-file to the path cloudflared printed above
-
-cloudflared tunnel run health-mcp
-```
-
-Set `MCP_ALLOWED_HOSTS=mcp.yourdomain.com` in `.env` and restart `npm run dev`.
-Your connector URL is now permanently `https://mcp.yourdomain.com/mcp`.
-
-### Option B — Quick tunnel (no domain needed, ephemeral URL)
-
-Same tradeoff as ngrok — zero setup, but the URL changes every time you
-restart it, so you'll need to re-add the connector in Claude mobile each time.
-
-```bash
-cloudflared tunnel --url http://localhost:3200
-# or: ngrok http 3200
-```
-
-Take the `https://...trycloudflare.com` (or `...ngrok-free.app`) URL it
-prints, set its bare hostname as `MCP_ALLOWED_HOSTS` in `.env`, and restart
-`npm run dev`.
-
-### Add the connector
-
-In the Claude mobile app: **Settings → Connectors → Add connector**, and enter:
-
-- URL: `https://<your-tunnel-domain>/mcp`
+- URL: `https://your-project.vercel.app/api/mcp`
 - If Claude's connector setup asks for an API key/auth header, use
   `Authorization: Bearer <MCP_API_KEY>`.
 
-Ask Claude something like "how many steps have I taken today?" — it should
-call `get_steps` and read the answer back from your phone.
+Ask Claude something like "how many steps have I taken today?" — it reads
+whatever the phone most recently synced. If an answer seems stale, ask
+Claude to run `check_sync_status` first — it reports the last synced
+timestamp per metric.
 
 ## Tools exposed
 
 | Tool | Data |
 |---|---|
-| `check_health_connect_status` | Whether the phone app is reachable and which permissions are granted |
+| `check_sync_status` | Last synced timestamp per metric (data is pushed periodically, not read live) |
 | `get_steps` | Total steps + hourly buckets |
 | `get_heart_rate_samples` | Raw BPM samples |
 | `get_sleep_sessions` | Sleep sessions with stage breakdowns |
@@ -150,19 +111,17 @@ call `get_steps` and read the answer back from your phone.
 | `get_exercise_sessions` | Logged workouts |
 
 All take optional `start`/`end` ISO-8601 timestamps; both default to the
-trailing 24 hours when omitted.
+trailing 24 hours when omitted. Range matching is bucket/session-level
+(hourly for steps/calories/distance), so sub-hour queries are approximate.
 
 ## Security notes
 
 - The Android app only ever **reads** Health Connect data; it never writes.
-- The local bridge (`android-companion`) uses plain HTTP by design — it's
-  meant for your own LAN/USB only. Don't port-forward it to the internet.
-- The MCP server should always sit behind `MCP_API_KEY` once tunneled.
-- Quick tunnels (ngrok free tier, `cloudflared tunnel --url`) are ephemeral —
-  the URL changes each restart, so you'll need to re-add the connector in
-  Claude mobile when that happens. A named Cloudflare tunnel (Option A
-  above) avoids this if you have a domain to spare.
-- Going beyond dev/local (a permanent hosted MCP server, real Google OAuth,
-  etc.) is a materially bigger project — a real backend, HTTPS certs, and
-  either the deprecated Google Fit API or a proper mobile-to-cloud sync
-  path for Health Connect data. Ask if/when you want to take that on.
+- `/api/sync` and `/api/mcp` both fail closed: if `SYNC_API_KEY` /
+  `MCP_API_KEY` aren't set, every request is rejected rather than allowed
+  through.
+- This is a single-user design (no multi-account support) — anyone with
+  `MCP_API_KEY` can read all synced health data, so treat it like a
+  password.
+- Rotate a key by changing it in Vercel's env vars and, for `SYNC_API_KEY`,
+  re-entering it in the Android app's settings.

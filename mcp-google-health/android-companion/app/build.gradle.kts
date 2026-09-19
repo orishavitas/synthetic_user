@@ -48,9 +48,12 @@ dependencies {
     // Health Connect
     implementation("androidx.health.connect:connect-client:1.1.0")
 
-    // Coroutines, for bridging Health Connect's suspend APIs into the HTTP server thread.
+    // Coroutines, for bridging Health Connect's suspend APIs into WorkManager/UI code.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // Tiny embedded HTTP server so the phone can serve local health data over LAN/USB.
-    implementation("org.nanohttpd:nanohttpd:2.3.1")
+    // Periodic background sync job.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // HTTP client for pushing sync payloads to the cloud MCP server.
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }

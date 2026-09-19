@@ -1,41 +1,28 @@
 package com.syntheticuser.healthbridge
 
-import android.Manifest
-import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.health.connect.client.permission.PermissionController
 import androidx.lifecycle.lifecycleScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Constraints
 import com.syntheticuser.healthbridge.databinding.ActivityMainBinding
-import java.net.NetworkInterface
-import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var repository: HealthConnectRepository
-    private lateinit var prefs: SharedPreferences
-    private var serverRunning = false
-
-    companion object {
-        private const val PREFS_NAME = "health_bridge"
-        private const val KEY_API_KEY = "api_key"
-        private const val BRIDGE_PORT = 8787
-    }
 
     private val requestPermissions = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract(),
     ) { refreshStatus() }
-
-    private val requestNotificationPermission = registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
-    ) { /* Notification is best-effort; the foreground service still runs without it pre-33. */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,13 +30,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         repository = HealthConnectRepository(applicationContext)
-        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+        binding.syncUrlInput.setText(SyncPrefs.syncUrl(this) ?: "")
+        binding.syncApiKeyInput.setText(SyncPrefs.syncApiKey(this) ?: "")
 
         binding.grantPermissionsButton.setOnClickListener {
             lifecycleScope.launch { requestPermissions.launch(HealthConnectRepository.READ_PERMISSIONS) }
         }
 
-        binding.toggleServerButton.setOnClickListener { toggleServer() }
+        binding.saveSettingsButton.setOnClickListener { saveSettingsAndSchedule() }
+        binding.syncNowButton.setOnClickListener { syncNow() }
 
         refreshStatus()
     }
@@ -59,17 +49,12 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
     }
 
-    private fun apiKey(): String =
-        prefs.getString(KEY_API_KEY, null) ?: UUID.randomUUID().toString().also {
-            prefs.edit().putString(KEY_API_KEY, it).apply()
-        }
-
     private fun refreshStatus() {
         if (!repository.isAvailable()) {
             binding.statusText.text = "Health Connect is not available on this device.\n" +
                 "Install/update the Health Connect app from Google Play, or use Android 14+."
             binding.grantPermissionsButton.isEnabled = false
-            binding.toggleServerButton.isEnabled = false
+            updateLastSyncText()
             return
         }
 
@@ -82,60 +67,67 @@ class MainActivity : AppCompatActivity() {
             } else {
                 "Health Connect access not yet granted. Tap the button below."
             }
-            binding.toggleServerButton.isEnabled = hasAll
-            updateConnectionInfo()
+            binding.syncNowButton.isEnabled = hasAll && SyncPrefs.isConfigured(this@MainActivity)
+            updateLastSyncText()
         }
     }
 
-    private fun toggleServer() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+    private fun saveSettingsAndSchedule() {
+        val url = binding.syncUrlInput.text.toString().trim()
+        val apiKey = binding.syncApiKeyInput.text.toString().trim()
+
+        if (url.isBlank() || apiKey.isBlank()) {
+            Toast.makeText(this, "Enter both the sync URL and API key first.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!url.startsWith("https://")) {
+            Toast.makeText(this, "Sync URL should be an https:// Vercel deployment URL.", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        val intent = Intent(this, BridgeForegroundService::class.java)
-            .putExtra(BridgeForegroundService.EXTRA_PORT, BRIDGE_PORT)
-            .putExtra(BridgeForegroundService.EXTRA_API_KEY, apiKey())
+        SyncPrefs.save(this, url, apiKey)
 
-        if (serverRunning) {
-            stopService(intent)
-        } else {
-            ActivityCompat.startForegroundService(this, intent)
-        }
-        serverRunning = !serverRunning
-        binding.toggleServerButton.text = if (serverRunning) "Stop bridge server" else "Start bridge server"
-        updateConnectionInfo()
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        // 15 minutes is the minimum interval WorkManager/JobScheduler allow for periodic work.
+        val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this)
+            .enqueueUniquePeriodicWork(SyncWorker.WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
+
+        Toast.makeText(this, "Periodic sync enabled (every ~15 min).", Toast.LENGTH_SHORT).show()
+        refreshStatus()
     }
 
-    private fun updateConnectionInfo() {
-        val addresses = localIpv4Addresses().ifEmpty { listOf("<no network connection found>") }
-        val urls = addresses.joinToString("\n") { "http://$it:$BRIDGE_PORT" }
+    private fun syncNow() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val request = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .build()
 
-        binding.connectionInfoText.text = buildString {
-            appendLine("Server: ${if (serverRunning) "RUNNING" else "stopped"}")
-            appendLine()
-            appendLine("On the laptop running the MCP server, set:")
-            appendLine("HEALTH_BRIDGE_URL=<one of the URLs below>")
-            appendLine(urls)
-            appendLine()
-            appendLine("HEALTH_BRIDGE_API_KEY=${apiKey()}")
-            appendLine()
-            appendLine("(Phone and laptop must be on the same Wi-Fi network, or use")
-            appendLine("'adb reverse tcp:$BRIDGE_PORT tcp:$BRIDGE_PORT' over USB and")
-            appendLine("HEALTH_BRIDGE_URL=http://127.0.0.1:$BRIDGE_PORT instead.)")
-        }
+        WorkManager.getInstance(this).enqueue(request)
+        Toast.makeText(this, "Sync started...", Toast.LENGTH_SHORT).show()
+
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(request.id)
+            .observe(this) { info ->
+                if (info != null && info.state.isFinished) {
+                    updateLastSyncText()
+                }
+            }
     }
 
-    private fun localIpv4Addresses(): List<String> =
-        try {
-            NetworkInterface.getNetworkInterfaces().toList()
-                .filter { it.isUp && !it.isLoopback }
-                .flatMap { it.inetAddresses.toList() }
-                .filter { it.hostAddress?.contains(":") == false }
-                .mapNotNull { it.hostAddress }
-        } catch (_: Exception) {
-            emptyList()
+    private fun updateLastSyncText() {
+        val status = SyncPrefs.lastSyncStatus(this) ?: "No sync attempted yet."
+        val configured = SyncPrefs.isConfigured(this)
+        binding.lastSyncText.text = buildString {
+            appendLine("Periodic sync: ${if (configured) "configured" else "not configured"}")
+            appendLine("Last sync result: $status")
         }
+    }
 }

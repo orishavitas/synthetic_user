@@ -1,25 +1,21 @@
 {
   "name": "google-health-mcp-server",
-  "version": "0.1.0",
-  "description": "Remote MCP server that lets Claude read Google Health Connect data via a local Android companion app.",
+  "version": "0.2.0",
+  "description": "Vercel-hosted MCP server exposing Google Health Connect data synced from an Android companion app, backed by Neon Postgres.",
   "type": "module",
-  "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
-    "build": "tsc -p tsconfig.json",
+    "dev": "vercel dev",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "dotenv": "^18.0.1",
-    "express": "^5.2.1",
+    "@neondatabase/serverless": "^1.1.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/express": "^5.0.6",
     "@types/node": "^26.6.2",
+    "@vercel/node": "^13.0.1",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   }
