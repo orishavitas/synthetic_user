@@ -1,7 +1,7 @@
-# Graph Report - C:\Users\OriShavit\Documents\GitHub\synthetic_user  (2026-05-06)
+# Graph Report - C:\Users\OriShavit\Documents\GitHub\synthetic_user  (2026-05-07)
 
 ## Corpus Check
-- 22 files · ~27,687 words
+- 22 files · ~27,662 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -58,12 +58,12 @@ Cohesion: 0.22
 Nodes (3): takeScreenshot(), buildMarkdownReport(), generateReport()
 
 ### Community 2 - "Community 2"
-Cohesion: 0.29
-Nodes (1): RunLogger
-
-### Community 3 - "Community 3"
 Cohesion: 0.38
 Nodes (4): runAgentLoop(), buildReasoningPrompt(), buildReasoningUserMessage(), buildVisionPrompt()
+
+### Community 3 - "Community 3"
+Cohesion: 0.29
+Nodes (1): RunLogger
 
 ### Community 4 - "Community 4"
 Cohesion: 0.6
@@ -112,11 +112,11 @@ Nodes (0):
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `runAgentLoop()` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 6`?**
+- **Why does `runAgentLoop()` connect `Community 2` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 6`?**
   _High betweenness centrality (0.281) - this node is a cross-community bridge._
-- **Why does `RunLogger` connect `Community 2` to `Community 1`, `Community 3`?**
+- **Why does `RunLogger` connect `Community 3` to `Community 1`, `Community 2`?**
   _High betweenness centrality (0.127) - this node is a cross-community bridge._
-- **Why does `routeReasoning()` connect `Community 0` to `Community 3`?**
+- **Why does `routeReasoning()` connect `Community 0` to `Community 2`?**
   _High betweenness centrality (0.101) - this node is a cross-community bridge._
 - **Are the 14 inferred relationships involving `runAgentLoop()` (e.g. with `buildVisionPrompt()` and `buildReasoningPrompt()`) actually correct?**
   _`runAgentLoop()` has 14 INFERRED edges - model-reasoned connections that need verification._

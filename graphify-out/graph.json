@@ -81,7 +81,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\agent\\loop.ts",
       "source_location": "L17",
       "id": "loop_runagentloop",
-      "community": 3,
+      "community": 2,
       "norm_label": "runagentloop()"
     },
     {
@@ -90,7 +90,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\agent\\prompts.ts",
       "source_location": "L1",
       "id": "c_users_orishavit_documents_github_synthetic_user_src_agent_prompts_ts",
-      "community": 3,
+      "community": 2,
       "norm_label": "prompts.ts"
     },
     {
@@ -99,7 +99,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\agent\\prompts.ts",
       "source_location": "L3",
       "id": "prompts_buildvisionprompt",
-      "community": 3,
+      "community": 2,
       "norm_label": "buildvisionprompt()"
     },
     {
@@ -108,7 +108,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\agent\\prompts.ts",
       "source_location": "L17",
       "id": "prompts_buildreasoningprompt",
-      "community": 3,
+      "community": 2,
       "norm_label": "buildreasoningprompt()"
     },
     {
@@ -117,7 +117,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\agent\\prompts.ts",
       "source_location": "L80",
       "id": "prompts_buildreasoningusermessage",
-      "community": 3,
+      "community": 2,
       "norm_label": "buildreasoningusermessage()"
     },
     {
@@ -450,7 +450,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\recording\\logger.ts",
       "source_location": "L22",
       "id": "logger_runlogger",
-      "community": 2,
+      "community": 3,
       "norm_label": "runlogger"
     },
     {
@@ -459,7 +459,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\recording\\logger.ts",
       "source_location": "L28",
       "id": "logger_runlogger_constructor",
-      "community": 2,
+      "community": 3,
       "norm_label": ".constructor()"
     },
     {
@@ -486,7 +486,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\recording\\logger.ts",
       "source_location": "L41",
       "id": "logger_runlogger_logguardrailevent",
-      "community": 2,
+      "community": 3,
       "norm_label": ".logguardrailevent()"
     },
     {
@@ -495,7 +495,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\recording\\logger.ts",
       "source_location": "L45",
       "id": "logger_runlogger_getdecisions",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getdecisions()"
     },
     {
@@ -504,7 +504,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\recording\\logger.ts",
       "source_location": "L49",
       "id": "logger_runlogger_getactions",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getactions()"
     },
     {
@@ -513,7 +513,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\recording\\logger.ts",
       "source_location": "L53",
       "id": "logger_runlogger_getguardrailevents",
-      "community": 2,
+      "community": 3,
       "norm_label": ".getguardrailevents()"
     },
     {
@@ -522,7 +522,7 @@
       "source_file": "C:\\Users\\OriShavit\\Documents\\GitHub\\synthetic_user\\src\\recording\\logger.ts",
       "source_location": "L57",
       "id": "logger_runlogger_save",
-      "community": 3,
+      "community": 2,
       "norm_label": ".save()"
     },
     {
